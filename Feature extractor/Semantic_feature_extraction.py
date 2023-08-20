@@ -14,8 +14,8 @@ device = torch.device('cuda:0')
 from ldm.util import instantiate_from_config
 from omegaconf import OmegaConf
 import clip
-from packages import model_options as MO
-from packages import feature_extraction_detach as FE
+# from packages import model_options as MO
+# from packages import feature_extraction_detach as FE
 import sys
 sys.path.append('/data/home/cddu/pythonProject/code/taming-transformers')    #taming-transformer path in your server
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -77,11 +77,11 @@ def get_text_features(coco_ids_path , stimuli_data_path , feature_saved_path):
 
 def main():
     parser = argparse.ArgumentParser(description='CLIP text feature extraction')
-    parser.add_argument('--stable_diffusion_config_path',  default='', type=str)
-    parser.add_argument('--stable_diffusion_skpt_path',  default='', type=str)
-    parser.add_argument('--coco_ids_path',  default='', type=str)
+    parser.add_argument('--stable_diffusion_config_path',  default='../Dataset/SD_models/v1-inference.yaml', type=str)
+    parser.add_argument('--stable_diffusion_skpt_path',  default='../Dataset/SD_models/sd-v1-4.ckpt', type=str)
+    parser.add_argument('--coco_ids_path',  default='../Dataset/NSD_preprocessed/sub01/trn_cocoID_correct.npy', type=str)
     parser.add_argument('--stimuli_data_path',  default='', type=str)
-    parser.add_argument('--feature_saved_path',  default='', type=str)
+    parser.add_argument('--feature_saved_path',  default='../Dataset/NSD_CLIP_semantic_latent_features/sub01', type=str)
     args = parser.parse_args()
     
     config = OmegaConf.load(args.stable_diffusion_config_path)
