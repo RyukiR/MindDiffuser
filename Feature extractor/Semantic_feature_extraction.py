@@ -9,7 +9,7 @@ from torch.utils.data import Dataset
 import torchvision
 from torchvision import transforms
 import numpy as np
-os.environ['CUDA_VISIBLE_DEVICES'] = '5'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 device = torch.device('cuda:0')
 from ldm.util import instantiate_from_config
 from omegaconf import OmegaConf
@@ -39,8 +39,8 @@ def load_model_from_config(config, ckpt, verbose=False):
 
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------
-def get_text_features(coco_ids_path , stimuli_data_path , feature_saved_path):
-    dataDir = '/nfs/diskstation/DataStation/public_dataset/MSCOCO/annotations_trainval2017'
+def get_text_features(coco_ids_path , stimuli_data_path , feature_saved_path, LDM_model):
+    dataDir = '../Dataset/COCO/annotations_trainval2017'
     annFile_trn = '{}/annotations/captions_{}.json'.format(dataDir, 'train2017')
     annFile_val = '{}/annotations/captions_{}.json'.format(dataDir, 'val2017')
     coco_caps_trn = COCO(annFile_trn)
@@ -79,14 +79,14 @@ def main():
     parser = argparse.ArgumentParser(description='CLIP text feature extraction')
     parser.add_argument('--stable_diffusion_config_path',  default='../Dataset/SD_models/v1-inference.yaml', type=str)
     parser.add_argument('--stable_diffusion_skpt_path',  default='../Dataset/SD_models/sd-v1-4.ckpt', type=str)
-    parser.add_argument('--coco_ids_path',  default='../Dataset/NSD_preprocessed/sub01/trn_cocoID_correct.npy', type=str)
+    parser.add_argument('--coco_ids_path',  default='../Dataset/NSD_preprocessed/sub01/val_cocoID_single_trial_correct.npy', type=str)
     parser.add_argument('--stimuli_data_path',  default='', type=str)
-    parser.add_argument('--feature_saved_path',  default='../Dataset/NSD_CLIP_semantic_latent_features/sub01', type=str)
+    parser.add_argument('--feature_saved_path',  default='../Dataset/NSD_CLIP_semantic_latent_features/sub01/val_single', type=str)
     args = parser.parse_args()
     
     config = OmegaConf.load(args.stable_diffusion_config_path)
     LDM_model = load_model_from_config(config, args.stable_diffusion_skpt_path).to(device)
-    a = get_text_features(args.coco_ids_path, args.stimuli_data_path, args.feature_saved_path)
+    a = get_text_features(args.coco_ids_path, args.stimuli_data_path, args.feature_saved_path, LDM_model)
 
 
 if __name__ == "__main__":
