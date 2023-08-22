@@ -33,13 +33,20 @@ def reshape_z(l):  #(8859,15,768)>>(8859,15*768)
 
 def calculate_r_and_mse(X, Y):
     # Compute Pearson correlation coefficient (r)
+    # XMean = np.mean(X)
+    # YMean = np.mean(Y)
+    # XSD = np.std(X)
+    # YSD = np.std(Y)
+    # ZX = (X - XMean) / (XSD + 1e-30)
+    # ZY = (Y - YMean) / (YSD + 1e-30)
+    # r = np.sum(ZX * ZY) / X.shape[0]
     XMean = np.mean(X)
     YMean = np.mean(Y)
     XSD = np.std(X)
     YSD = np.std(Y)
     ZX = (X - XMean) / (XSD + 1e-30)
     ZY = (Y - YMean) / (YSD + 1e-30)
-    r = np.sum(ZX * ZY) / X.shape[0]
+    r = np.sum(ZX * ZY) / np.sqrt(np.sum(ZX**2) * np.sum(ZY**2))
     
     # Compute Mean Squared Error (MSE)
     mse = np.mean((X - Y) ** 2)
@@ -65,13 +72,13 @@ def reverse_reshape(l , mean, std): #(8859,15*768)>>(8859,15,768);revers_z_score
     return b_after_reverse
 
 
-def training_decode_LDM_text_feature(x_trn, y_trn, x_val, y_val, mean, std, model_save_path, n , save):
+def training_decode_LDM_text_feature(x_trn, y_trn, x_val, y_val, mean, std, model_save_path, alpha, n_fea, save):
 	model = fastl2lir.FastL2LiR()
-	model.fit(x_trn, y_trn, alpha=0.15, n_feat=n)
+	model.fit(x_trn, y_trn, alpha, n_fea)
 	pred = model.predict(x_val)
     
 	if save:
-		model_name = "fastl2_n_feat_{}.pickle".format(n)
+		model_name = "fastl2_semantic_{}_{}.pickle".format(n_fea, alpha)
 		f = open(model_save_path + model_name, 'wb')
 		pickle.dump(model, f, protocol=4)
 		f.close()
@@ -85,17 +92,17 @@ def training_decode_LDM_text_feature(x_trn, y_trn, x_val, y_val, mean, std, mode
 		cor_i, mse_i = calculate_r_and_mse(x, y)
 		cor.append(abs(cor_i))
 		mse.append(mse_i)
-	print("使用 {} 个体素的 r 和 MSE 分别为：{} / {}".format(n, np.mean(cor), np.mean(mse)))
+	print("正则化强度 {} 下使用 {} 个体素的 r 和 MSE 分别为：{} / {}".format(alpha, n_fea, np.mean(cor), np.mean(mse)))
 	return np.mean(cor), np.mean(mse)
 
-def decode_LDM_text_feature(val_file_ex, n, mean_path, std_path, cls, model_save_path , i):
+def decode_LDM_text_feature(val_file_ex, alpha, n_fea, mean_path, std_path, cls, model_save_path , i):
     x_test = fetch_ROI_voxel(val_file_ex, ROIs)  # [recons_img_idx:recons_img_idx + 1, :]
     x_test = scaler.fit_transform(x_test)
     mean = (np.load(mean_path)).reshape(1, -1)
     std = (np.load(std_path))
     std[:768] = 0
     std = std.reshape(1, -1)
-    model_name = "fastl2_n_feat_{}.pickle".format(n)
+    model_name = "fastl2_semantic_{}_{}.pickle".format(n_fea, alpha)
     f_save = open(model_save_path + model_name, 'rb')
     model = pickle.load(f_save)
     f_save.close()
@@ -147,7 +154,9 @@ def main():
     x_trn = x[:, :]
     x_val = x[8000:, :]
 
-    r, mse = training_decode_LDM_text_feature(x_trn, y_trn, x_val, y_val, mean, s, args.model_save_path, 450 , True)
+    alpha = 0.15
+    n_fea = 450
+    _, _ = training_decode_LDM_text_feature(x_trn, y_trn, x_val, y_val, mean, s, args.model_save_path, alpha, n_fea, True)
     
     group = [0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.22, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.36,
              0.38, 0.4, 0.42, 0.44, 0.46, 0.48, 0.5, 0.52, 0.54, 0.56, 0.58, 0.6, 0.62, 0.64, 0.66, 0.68, 0.7, 0.72,
@@ -156,8 +165,8 @@ def main():
     mse = []
     y_test = np.load(args.val_CLIP_text_feature_path )
     for i in tqdm(range(982)):
-        y_pred = decode_LDM_text_feature(args.val_file_ex, 450, args.text_mean_path_without_cut, 
-                                         args.text_std_path_without_cut, cls, args.model_save_path , i)
+        y_pred = decode_LDM_text_feature(args.val_file_ex, alpha, n_fea, args.text_mean_path_without_cut, 
+                                         args.text_std_path_without_cut, cls, args.model_save_path, i)
         y_pred = _reshape(y_pred)
         y_test_ = y_test[i:i + 1, :, :]
         y_test_ = _reshape(y_test_)
@@ -165,16 +174,18 @@ def main():
         cor.append(abs(cor_i))
         mse.append(mse_i)
     
-    plt.hist(cor, group, histtype='bar')
+    plt.hist(cor, histtype='bar')
     plt.xlabel('PCC Value')
     plt.ylabel('Frequency')
-    plt.title('Histogram of PCC')
+    plt.title('Histogram of PCC (Mean {}, n_fea {}, alpha {})'.format(np.mean(cor), n_fea, alpha))
+    plt.savefig("results/semantic_pcc_histogram_{}_{}.png".format(n_fea, alpha))
     plt.show()
     
     plt.hist(mse, histtype='bar')
     plt.xlabel('MSE Value')
     plt.ylabel('Frequency')
-    plt.title('Histogram of MSE')
+    plt.title('Histogram of MSE (Mean {}, n_fea {}, alpha {})'.format(np.mean(mse), n_fea, alpha))
+    plt.savefig("results/semantic_mse_histogram_{}_{}.png".format(n_fea, alpha))
     plt.show()
 
 if __name__ == "__main__":
