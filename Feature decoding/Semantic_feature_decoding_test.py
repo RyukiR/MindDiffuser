@@ -156,7 +156,7 @@ def main():
 
     alpha = 0.15
     n_fea = 450
-    _, _ = training_decode_LDM_text_feature(x_trn, y_trn, x_val, y_val, mean, s, args.model_save_path, alpha, n_fea, True)
+    # _, _ = training_decode_LDM_text_feature(x_trn, y_trn, x_val, y_val, mean, s, args.model_save_path, alpha, n_fea, True)
     
     group = [0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.22, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.36,
              0.38, 0.4, 0.42, 0.44, 0.46, 0.48, 0.5, 0.52, 0.54, 0.56, 0.58, 0.6, 0.62, 0.64, 0.66, 0.68, 0.7, 0.72,
@@ -174,19 +174,15 @@ def main():
         cor.append(abs(cor_i))
         mse.append(mse_i)
     
-    plt.hist(cor, histtype='bar')
-    plt.xlabel('PCC Value')
+    plt.hist(cor, alpha=0.5, label='PCC', histtype='bar')
+    plt.hist(mse, alpha=0.5, label='MSE', histtype='bar')
+    plt.xlabel('Value')
     plt.ylabel('Frequency')
-    plt.title('Histogram of PCC (Mean {}, n_fea {}, alpha {})'.format(np.mean(cor), n_fea, alpha))
-    plt.savefig("results/semantic_pcc_histogram_{}_{}.png".format(n_fea, alpha))
-    plt.show()
-    
-    plt.hist(mse, histtype='bar')
-    plt.xlabel('MSE Value')
-    plt.ylabel('Frequency')
-    plt.title('Histogram of MSE (Mean {}, n_fea {}, alpha {})'.format(np.mean(mse), n_fea, alpha))
-    plt.savefig("results/semantic_mse_histogram_{}_{}.png".format(n_fea, alpha))
-    plt.show()
+    title_line1 = 'Histograms (n_fea: {}, alpha: {})'.format(n_fea, alpha)
+    title_line2 = 'Mean PCC: {}, Mean MSE: {}'.format(np.mean(cor), np.mean(mse))
+    plt.title('{}\n{}'.format(title_line1, title_line2))
+    plt.legend(loc='upper right')
+    plt.savefig(os.path.join("Feature decoding", "results", "semantic_histogram_{}_{}.png".format(n_fea, alpha)))
 
 if __name__ == "__main__":
     main()

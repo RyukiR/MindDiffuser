@@ -66,6 +66,7 @@ def get_text_features(coco_ids_path , stimuli_data_path , feature_saved_path, LD
         cap_LDM_feature_average = 0
         
         for i in range(5):
+            print([caps[i]])
             cap = LDM_model.get_learned_conditioning([caps[i]]).cpu().detach().numpy().squeeze()
             cap_LDM_feature_average = cap_LDM_feature_average + cap
             
