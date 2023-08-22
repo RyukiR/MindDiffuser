@@ -118,6 +118,7 @@ def main():
     parser.add_argument('--val_CLIP_text_feature_path', default='../Dataset/NSD_CLIP_semantic_latent_features/sub01/val_multi.npy', type=str)
     parser.add_argument('--text_mean_path', default='./z-score/text_lf_mean', type=str)
     parser.add_argument('--text_std_path', default='./z-score/text_lf_std', type=str)
+    parser.add_argument('--cls_token_path', default='', type=str)
     parser.add_argument('--recons_img_idx', default='0', type=float)
 
     args = parser.parse_args()
